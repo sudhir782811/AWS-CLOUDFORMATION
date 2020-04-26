@@ -1,0 +1,78 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "",
+    "Metadata": {},
+    "Parameters": {
+      "vpccidr": {
+          "Description": "choose vpc cidr",
+          "Type": "String",
+          "Default": "10.20.0.0/16"
+      },
+      "subnet1cidr": {
+          "Description": "choose subnet1 cidr",
+          "Type": "String",
+          "Default": "10.20.0.0/24"
+      },
+      "subnet1azs": {
+          "Description": "choose subnet1 az",
+          "Type": "AWS::EC2::AvailabilityZone::Name"
+      }
+    },
+    "Mappings": {},
+    "Conditions": {},
+    "Resources": {
+      "myAppvpc": {
+        "Type": "AWS::EC2::VPC",
+        "Properties": {
+          "CidrBlock": { "Ref": "vpccidr" },
+          "Tags": [{ "Key": "Name", "Value":  "myvpc" }]
+        }
+      },
+      "subnet1": {
+        "Type": "AWS::EC2::Subnet",
+        "Properties": {
+          "AvailabilityZone": { "Ref": "subnet1azs" },
+          "MapPublicIpOnLaunch" : "true",
+          "VpcId": { "Ref": "myAppvpc" },
+          "CidrBlock": { "Ref": "subnet1cidr" },
+          "Tags": [{ "Key": "Name", "Value":  "subnet1" }]
+        }
+      },
+      "myappIGW": {
+        "Type": "AWS::EC2::InternetGateway",
+        "Properties": {
+          "Tags": [{ "Key": "Name", "Value":  "MyIGW" }]
+        }
+      },
+      "AttachGateway": {
+        "Type": "AWS::EC2::VPCGatewayAttachment",
+        "Properties": {
+          "VpcId": { "Ref": "myAppvpc" },
+          "InternetGatewayId": { "Ref": "myappIGW" }
+        }
+      },
+      "MYROUTETABLE": {
+        "Type": "AWS::EC2::RouteTable",
+        "Properties": {
+          "VpcId": { "Ref": "myAppvpc" },
+          "Tags": [{ "Key": "Name", "Value":  "MYRT" }]
+        }
+      },
+      "RT": {
+        "Type": "AWS::EC2::Route",
+        "Properties": {
+          "RouteTableId": { "Ref": "MYROUTETABLE" },
+          "DestinationCidrBlock": "0.0.0.0/0",
+          "GatewayId": { "Ref": "myappIGW" }
+        }
+      },
+      "subnet1association": {
+        "Type": "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties": {
+          "SubnetId": { "Ref": "subnet1" },
+          "RouteTableId": { "Ref": "MYROUTETABLE" }
+        }
+      }
+    },
+    "Outputs": {}
+}
